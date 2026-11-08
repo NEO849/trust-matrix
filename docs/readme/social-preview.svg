@@ -1,0 +1,89 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="640" viewBox="0 0 1280 640">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#121820"/>
+      <stop offset="0.45" stop-color="#0d1218"/>
+      <stop offset="1" stop-color="#090c11"/>
+    </linearGradient>
+    <linearGradient id="slabEdge" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#2b3440"/>
+      <stop offset="1" stop-color="#161c24"/>
+    </linearGradient>
+    <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
+      <path d="M40 0H0V40" fill="none" stroke="#1b232c" stroke-width="1" opacity="0.35"/>
+    </pattern>
+  </defs>
+
+  <!-- carbon ground -->
+  <rect width="1280" height="640" fill="url(#bg)"/>
+  <rect width="1280" height="640" fill="url(#grid)"/>
+  <rect x="0" y="0" width="1280" height="2" fill="#39434f" opacity="0.6"/>
+
+  <!-- left column -->
+  <rect x="64" y="118" width="14" height="14" rx="3" fill="#2ea043"/>
+  <text x="90" y="200" font-family="DejaVu Sans Mono, monospace" font-size="76" font-weight="bold" fill="#e9eee8" letter-spacing="1">trust-matrix</text>
+
+  <g font-family="DejaVu Sans, sans-serif" font-size="27">
+    <text x="66" y="250" fill="#cbd3cb">Replay one request across</text>
+    <text x="66" y="286" fill="#cbd3cb">many identities. See where</text>
+    <text x="66" y="322" fill="#9aa39c">the trust boundary breaks.</text>
+  </g>
+
+  <!-- gate chips -->
+  <g font-family="DejaVu Sans Mono, monospace" font-size="18">
+    <text x="66" y="394" fill="#8b958c">GET-only  ·  dry-run default  ·  PII redacted</text>
+    <text x="66" y="424" fill="#b9c2ba">CANDIDATE, never CONFIRMED</text>
+  </g>
+
+  <!-- footer -->
+  <text x="66" y="566" font-family="DejaVu Sans Mono, monospace" font-size="21" fill="#9aa39c">github.com/NEO849/trust-matrix</text>
+  <text x="774" y="566" font-family="DejaVu Sans Mono, monospace" font-size="18" fill="#5c6660">MIT · Python 3 · authorized use only</text>
+
+  <!-- right column: the matrix, as an inset well -->
+  <rect x="690" y="100" width="526" height="440" rx="8" fill="#0b0f14" stroke="url(#slabEdge)" stroke-width="1.5"/>
+  <rect x="690" y="100" width="526" height="2" rx="1" fill="#39434f" opacity="0.5"/>
+
+  <text x="716" y="150" font-family="DejaVu Sans Mono, monospace" font-size="22" fill="#9aa39c">GET /account/123</text>
+  <line x1="716" y1="168" x2="1190" y2="168" stroke="#222b34" stroke-width="1"/>
+
+  <!-- header -->
+  <g font-family="DejaVu Sans Mono, monospace" font-size="17" fill="#67716a" letter-spacing="0.5">
+    <text x="744" y="206">IDENTITY</text>
+    <text x="968" y="206">STATUS</text>
+    <text x="1070" y="206">VERDICT</text>
+  </g>
+
+  <!-- rows -->
+  <g font-family="DejaVu Sans Mono, monospace" font-size="21">
+    <circle cx="724" cy="250" r="5" fill="#2ea043"/>
+    <text x="744" y="257" fill="#d7ddd6">owner</text>
+    <text x="968" y="257" fill="#9aa39c">200</text>
+    <text x="1070" y="257" fill="#2ea043">control</text>
+
+    <circle cx="724" cy="300" r="5" fill="#d8a44a"/>
+    <text x="744" y="307" fill="#d7ddd6">acct</text>
+    <text x="968" y="307" fill="#9aa39c">200</text>
+    <text x="1070" y="307" fill="#d8a44a">CANDIDATE</text>
+
+    <circle cx="724" cy="350" r="5" fill="#4f6f5b"/>
+    <text x="744" y="357" fill="#d7ddd6">anon</text>
+    <text x="968" y="357" fill="#9aa39c">403</text>
+    <text x="1070" y="357" fill="#6f8f78">blocked</text>
+
+    <circle cx="724" cy="400" r="5" fill="#d8a44a"/>
+    <text x="744" y="407" fill="#d7ddd6">expired</text>
+    <text x="968" y="407" fill="#9aa39c">200</text>
+    <text x="1070" y="407" fill="#d8a44a">CANDIDATE</text>
+
+    <circle cx="724" cy="450" r="5" fill="#d8a44a"/>
+    <text x="744" y="457" fill="#d7ddd6">revoked</text>
+    <text x="968" y="457" fill="#9aa39c">200</text>
+    <text x="1070" y="457" fill="#d8a44a">CANDIDATE</text>
+  </g>
+
+  <line x1="716" y1="486" x2="1190" y2="486" stroke="#222b34" stroke-width="1"/>
+  <g font-family="DejaVu Sans Mono, monospace" font-size="15" fill="#67716a">
+    <text x="716" y="510">owner control proves the object is real.</text>
+    <text x="716" y="530">others getting the same data = boundary break.</text>
+  </g>
+</svg>

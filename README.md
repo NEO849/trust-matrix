@@ -1,29 +1,62 @@
+<div align="center">
+
+<img src="docs/readme/social-preview.png" alt="trust-matrix replays one GET across the identity matrix {owner, acct, anon, expired, revoked}: owner=200 is the control, and the same data reaching another identity is the trust-boundary break" width="100%">
+
+<br/>
+
 # trust-matrix
 
 **Replay one request across many identities — see where the trust boundary breaks.**
 
-A focused CLI for authorization (BOLA / IDOR) testing that produces *triage-safe evidence*,
-not noisy "CONFIRMED!" claims. You give it one GET operation and a small matrix of identities;
-it replays the request as each identity and builds a cross-identity diff table with an honest
-verdict.
+<em>A focused CLI for authorization (BOLA / IDOR) testing that produces <b>triage-safe evidence</b>,<br/>
+not noisy "CONFIRMED!" claims. One GET operation, an identity matrix, an honest verdict.</em>
 
-> GET-only · dry-run by default · PII redacted · never prints "CONFIRMED", only "CANDIDATE".
+<br/>
 
-## The problem
+[![CI](https://github.com/NEO849/trust-matrix/actions/workflows/ci.yml/badge.svg)](https://github.com/NEO849/trust-matrix/actions/workflows/ci.yml)
+&nbsp;
+![Tests](https://img.shields.io/badge/tests-20_passing-1f7a33?style=flat-square&labelColor=0b0f14)
+&nbsp;
+![License](https://img.shields.io/badge/License-MIT-2b3440?style=flat-square&labelColor=0b0f14)
+&nbsp;
+![Python](https://img.shields.io/badge/Python-3.8+-2b3440?style=flat-square&logo=python&logoColor=9aa39c&labelColor=0b0f14)
+&nbsp;
+![Safe by default](https://img.shields.io/badge/GET--only_·_dry--run-1f7a33?style=flat-square&labelColor=0b0f14)
+
+<br/>
+
+<a href="#why">Why</a> · <a href="#what">What it does</a> · <a href="#different">Why it's different</a> · <a href="#notwhat">What it is NOT</a> · <a href="#install">Install</a> · <a href="#quickstart">Quickstart</a> · <a href="#verdicts">How it decides</a> · <a href="#safety">Safety</a>
+
+</div>
+
+> **Scope / lawful use.** Authorized testing only: your own systems, or in-scope bug-bounty / pentest
+> targets. You supply sessions for accounts you control; trust-matrix never creates accounts (AUP),
+> only sends GET, and defaults to dry-run. See [`SAFETY.md`](SAFETY.md).
+
+---
+
+<a id="why"></a>
+![Why this exists](https://img.shields.io/badge/Why_this_exists-141820?style=for-the-badge&labelColor=0b0f14)
 
 Broken Object Level Authorization (BOLA) is [OWASP API Security #1](https://owasp.org/API-Security/editions/2023/en/0xa1-broken-object-level-authorization/).
-Finding it means replaying the same request as different users and comparing responses — which
-by hand is fiddly and error-prone:
+You find it by replaying the same request as different users and comparing responses — and by hand
+that is exactly where mistakes creep in:
 
-- You need several real accounts and have to juggle their sessions.
+- You need several real accounts and have to juggle their sessions by hand.
 - A `200 OK` is easy to misread: the data might just be **public**, not cross-tenant — a false
-  positive that burns your credibility at triage.
-- Easy-to-forget dimensions (an expired or **revoked** token that still works) go untested.
+  positive that burns your credibility the moment a triager spots it.
+- The easy-to-forget dimensions — an **expired** token, or one you **revoked** that still works —
+  usually go untested.
 
-## What it does
+trust-matrix does the mechanical part once, carefully, and hands you evidence you can trust.
 
-Given one operation and an identity matrix, it replays once per identity and diffs every leg
-against the **owner control**:
+---
+
+<a id="what"></a>
+![What it does](https://img.shields.io/badge/What_it_does-141820?style=for-the-badge&labelColor=0b0f14)
+
+Give it one operation and an identity matrix. It replays the request once per identity and diffs
+every leg against the **owner control**:
 
 ```
 == Trust-Matrix :: GET /v1/account/123 ==
@@ -37,48 +70,65 @@ TenantB-revoked    revoked  200    100%    100%    4         CANDIDATE  <- serve
 3 CANDIDATE — reproduce independently and verify server-side before reporting. No auto-submit.
 ```
 
-The **owner** leg is the control: the owner fetching its own object must return `200`. That
-proves the object is real and owned — so *candidate + control* is automatic before/after
-evidence. With `--report md` you get a submittable Markdown write-up (redacted) out of the box.
+The **owner** leg is the control: the owner fetching its *own* object must return `200`. That proves
+the object is real and owned — so *candidate + control* is automatic before/after evidence. Add
+`--report md` and you get a submittable, PII-redacted Markdown write-up out of the box (cold-witness
+pair, cross-identity matrix, leaked-PII paths, reproduction steps).
 
-## Why it's different (honestly)
+---
 
-Plenty of tools replay requests across accounts (Burp's Autorize / AuthMatrix, and several
-CLIs). trust-matrix isn't trying to beat them at discovery. Its edge is **evidence discipline**
-and **the revocation dimension**:
+<a id="different"></a>
+![Why it's different, honestly](https://img.shields.io/badge/Why_it's_different-141820?style=for-the-badge&labelColor=0b0f14)
+
+Plenty of tools replay requests across accounts — Burp's Autorize / AuthMatrix (GUI extensions),
+and a handful of younger CLIs. trust-matrix is **not** trying to beat them at discovery. Its edge is
+**evidence discipline** and the **revocation dimension**:
 
 | | trust-matrix | Typical BOLA tools |
 |---|---|---|
-| Verdict wording | **CANDIDATE** only (you confirm) | often hard "Confirmed" / "Critical" |
-| PII in output | actively **redacted** (length + hash) | frequently raw body / headers |
+| Verdict wording | **CANDIDATE** only — you confirm | often a hard "Confirmed" / "Critical" |
+| PII in output | actively **redacted** (length + SHA-1) | frequently raw body / headers |
 | Public-data false positive | auto-downgraded to `public-data-review` | varies |
 | Revoked-token leg | **yes** — issue → revoke/logout → replay | essentially none |
-| Interface | CLI (scriptable, CI-friendly) | often GUI / Burp extension |
+| Interface | CLI — scriptable, CI-friendly | often GUI / Burp extension |
 
-Two of these — **"CANDIDATE not CONFIRMED" wording** and **active PII redaction** — are, at the
-time of writing, near-universal gaps in comparable open tools. The **public-data auto-downgrade**
-is a quality feature, not a unique one (a few tools do it too); it's here because it kills the
-most common authorization false positive.
+Being honest about the edge: the **"CANDIDATE, never CONFIRMED" wording** and **active PII
+redaction** are, at the time of writing, near-universal gaps in comparable open tools. The
+**public-data auto-downgrade** is a *quality* feature, not a unique one — a couple of tools do it
+too; it is here because it kills the single most common authorization false positive. The one thing
+no comparable tool tests is a **genuinely revoked** server-issued token replayed back at the API.
 
-## What it is NOT
+---
 
-- **Not a discovery tool.** You tell it which object and which identities. It won't crawl your
+<a id="notwhat"></a>
+![What it is NOT](https://img.shields.io/badge/What_it_is_NOT-141820?style=for-the-badge&labelColor=0b0f14)
+
+- **Not a discovery tool.** You tell it which object and which identities. It will not crawl your
   app or guess IDs.
 - **Not a scanner.** One operation per run, by design. Sharp, not broad.
-- **Not an exploit or auto-submitter.** GET-only, dry-run by default, and it never decides a bug
-  is real — that is your job.
+- **Not an exploit or auto-submitter.** GET-only, dry-run by default, and it never decides a bug is
+  real — that is your job.
 
-## Install
+---
 
-```
-git clone <repo-url>
+<a id="install"></a>
+![Install](https://img.shields.io/badge/Install-141820?style=for-the-badge&labelColor=0b0f14)
+
+```bash
+git clone https://github.com/NEO849/trust-matrix
 cd trust-matrix
-pip install -r requirements.txt   # just: requests
+pip install -r requirements.txt   # one dependency: requests
 ```
 
-## Quickstart
+Python 3.8+. No build step, no services.
 
-1. Create your identity matrix (copy `identities.conf.sample`):
+---
+
+<a id="quickstart"></a>
+![Quickstart](https://img.shields.io/badge/Quickstart-141820?style=for-the-badge&labelColor=0b0f14)
+
+**1. Describe your identities** (copy [`identities.conf.sample`](identities.conf.sample)) —
+`label | kind | auth | cookie`, one per line:
 
 ```
 TenantB          | owner   | Bearer <OWNER_TOKEN>    |
@@ -87,16 +137,16 @@ anon             | anon    |                         |
 TenantB-revoked  | revoked | Bearer <REVOKED_TOKEN>  |
 ```
 
-2. Dry-run first (sends nothing — shows the plan):
+**2. Dry-run first** — prints the plan, sends nothing:
 
-```
+```bash
 python3 trust_matrix.py --identities identities.conf \
   --base https://api.target.com/v1 --path /account/123
 ```
 
-3. Go live (read-only GETs) and emit a submittable report:
+**3. Go live** (read-only GETs) and emit a submittable report:
 
-```
+```bash
 python3 trust_matrix.py --identities identities.conf \
   --base https://api.target.com/v1 --path /account/123 --go --report md
 ```
@@ -104,7 +154,7 @@ python3 trust_matrix.py --identities identities.conf \
 Outputs land in `trust_matrix_out/`: a PII-redacted `trust_matrix_findings.json` and, with
 `--report md`, a `trust_matrix_report.md` you can adapt into a disclosure.
 
-## Identity kinds
+### Identity kinds
 
 | kind | meaning |
 |---|---|
@@ -114,21 +164,60 @@ Outputs land in `trust_matrix_out/`: a PII-redacted `trust_matrix_findings.json`
 | `expired` | a token whose lifetime has passed (tests expiry enforcement) |
 | `revoked` | a token you revoked / logged out server-side (tests session invalidation) |
 
-## How it decides
+---
 
-- **blocked** — leg got a non-200 or only an error object. Good: the boundary held.
-- **CANDIDATE** — leg got 200 + the owner's data (value overlap > 60% or a leaked PII value).
-  Worth confirming.
-- **accessible-review** — leg got 200 but *its own* data, not the owner's. Not cross-tenant.
-- **public-data-review** — the anon leg also got the data → likely public (working as intended).
-- **invalid-no-control** — the owner leg failed, so no claim can be made. Fix it and re-run.
+<a id="verdicts"></a>
+![How it decides](https://img.shields.io/badge/How_it_decides-141820?style=for-the-badge&labelColor=0b0f14)
 
-## Responsible use
+| verdict | meaning |
+|---|---|
+| **blocked** | leg got a non-200 or only an error object — the boundary held |
+| **CANDIDATE** | leg got 200 + the owner's data (value overlap > 60% or a leaked PII value) — worth confirming |
+| **accessible-review** | leg got 200 but *its own* data, not the owner's — not cross-tenant |
+| **public-data-review** | the anon leg also got the data → likely public (working as intended) |
+| **invalid-no-control** | the owner leg failed, so no claim can be made — fix it and re-run |
 
-Authorized testing only. You supply sessions for accounts you control; trust-matrix never
-creates accounts (anti-fraud / AUP), only sends GET, and defaults to dry-run. See
-[`SAFETY.md`](SAFETY.md).
+The strongest label is `CANDIDATE`. Server-side confirmation and the decision to report are always
+yours.
 
-## License
+---
 
-[MIT](LICENSE).
+<a id="safety"></a>
+![Safety](https://img.shields.io/badge/Safety-1f7a33?style=for-the-badge&labelColor=0b0f14)
+
+The guardrails are built in, not optional: **GET-only**, **dry-run by default**, **no account
+creation**, **PII never in clear text** (length + short hash), **no "CONFIRMED" verdict**, **no
+auto-submit**. Full threat model and responsibilities in [`SAFETY.md`](SAFETY.md).
+
+---
+
+![Layout](https://img.shields.io/badge/Project_layout-141820?style=for-the-badge&labelColor=0b0f14)
+
+```
+trust_matrix.py   CLI + replay + verdict logic + Markdown report
+diff_core.py      pure JSON diff primitives (schema / value overlap / PII) — offline-testable
+tests/            20 tests — unit (fixtures) + end-to-end against a local fixture server
+identities.conf.sample   the input format, documented
+SAFETY.md         guardrails as a threat model
+```
+
+Run the tests yourself:
+
+```bash
+pip install -r requirements.txt pytest
+python -m pytest -q      # 20 passed
+```
+
+---
+
+<div align="center">
+
+**Built by [NEO849](https://github.com/NEO849).** Issues and PRs welcome — see [`CONTRIBUTING.md`](CONTRIBUTING.md).
+
+![License](https://img.shields.io/badge/License-MIT-2b3440?style=flat-square&labelColor=0b0f14)
+&nbsp;
+![Authorized testing only](https://img.shields.io/badge/Authorized_testing-only-8a5a2b?style=flat-square&labelColor=0b0f14)
+
+MIT — see [`LICENSE`](LICENSE).
+
+</div>
