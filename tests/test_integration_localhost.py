@@ -56,9 +56,10 @@ def _conf(tmp_path):
     return str(p)
 
 
-def _run(conf, base, out, go, rate="0"):
+def _run(conf, base, out, go, rate="0", report="none"):
     cmd = [sys.executable, TOOL, "--identities", conf, "--base", base,
-           "--path", "/account/123", "--rate", rate, "--out", out]
+           "--path", "/account/123", "--rate", rate, "--out", out,
+           "--report", report]
     if go:
         cmd.append("--go")
     return subprocess.run(cmd, capture_output=True, text=True, timeout=30)
@@ -91,7 +92,7 @@ def test_live_run_flags_candidate_and_redacts(tmp_path):
     assert REQUESTS_SEEN["n"] == 4, "je Identität genau 1 GET"
     assert "CANDIDATE" in r.stdout
     assert "CONFIRMED" not in r.stdout
-    assert "expired/revoked token still honored" in r.stdout  # net-neue Dimension live
+    assert "expired token still honored" in r.stdout  # net-neue Dimension live
 
     artifact = json.load(open(os.path.join(out, "trust_matrix_findings.json")))
     assert artifact["control_ok"] is True
@@ -102,3 +103,22 @@ def test_live_run_flags_candidate_and_redacts(tmp_path):
     assert by["TenantB-expired"]["verdict"] == "CANDIDATE"
     # PII-Gate: kein Klartext-Email im ganzen Artefakt
     assert "bob@example.com" not in json.dumps(artifact)
+
+
+def test_live_run_writes_submittable_markdown_report(tmp_path):
+    REQUESTS_SEEN["n"] = 0
+    srv = _serve()
+    try:
+        base = f"http://127.0.0.1:{srv.server_address[1]}"
+        out = str(tmp_path / "out")
+        r = _run(_conf(tmp_path), base, out, go=True, report="md")
+    finally:
+        srv.shutdown()
+
+    assert r.returncode == 0, r.stderr
+    report = open(os.path.join(out, "trust_matrix_report.md")).read()
+    assert "# Authorization Trust-Boundary Report" in report
+    assert "CANDIDATE" in report
+    assert "CONFIRMED" not in report              # Hard-Gate im Report
+    assert "bob@example.com" not in report        # PII-Gate: redacted
+    assert "cold-witness" in report.lower()       # Before/After-Evidenz enthalten

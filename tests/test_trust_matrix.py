@@ -9,6 +9,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from trust_matrix import (  # noqa: E402
     build_matrix_table, cold_witness_pair, load_identities, format_table,
+    format_report_md,
 )
 
 
@@ -158,3 +159,64 @@ def test_load_identities_rejects_unknown_kind(tmp_path):
         assert False, "unbekannte kind muss abgelehnt werden"
     except ValueError:
         pass
+
+
+def test_revoked_token_still_honored_has_own_invalidation_note():
+    """Revocation ist die echte Marktlücke (kein Tool testet server-widerrufene Tokens):
+    ein als 'revoked' markiertes Leg, das noch Daten liefert, bekommt eine EIGENE,
+    von 'expired' unterscheidbare Notiz (kaputte Session-Invalidierung)."""
+    baseline = leg("TenantB", "owner", 200, TENANT_B)
+    legs = [leg("TenantB-revoked", "revoked", 200, dict(TENANT_B))]
+    table = build_matrix_table(baseline, legs)
+    row = table["rows"][0]
+    assert row["verdict"] == "CANDIDATE"
+    note = row.get("note", "").lower()
+    assert "revo" in note or "invalidation" in note or "widerruf" in note
+    assert "invalidation" in note or "widerruf" in note  # Session-Invalidierung benannt
+
+
+def test_expired_and_revoked_notes_are_distinct():
+    """expired (Ablauf nicht durchgesetzt) und revoked (Widerruf nicht durchgesetzt)
+    sind verschiedene Bug-Ursachen und dürfen nicht dieselbe Notiz tragen."""
+    baseline = leg("TenantB", "owner", 200, TENANT_B)
+    exp = build_matrix_table(baseline, [leg("e", "expired", 200, dict(TENANT_B))])["rows"][0]
+    rev = build_matrix_table(baseline, [leg("r", "revoked", 200, dict(TENANT_B))])["rows"][0]
+    assert exp["note"] and rev["note"]
+    assert exp["note"] != rev["note"]
+
+
+def test_load_identities_accepts_revoked_kind(tmp_path):
+    conf = tmp_path / "ids.conf"
+    conf.write_text("TenantB-revoked | revoked | Bearer OLD |\n")
+    ids = load_identities(str(conf))
+    assert ids[0]["kind"] == "revoked"
+
+
+def test_markdown_report_is_submittable_and_redacts_pii():
+    """Der --report md Export: einreichfertiger Before/After-Report mit cold-witness,
+    nie 'CONFIRMED', PII nur als Pfad (nie Klartext)."""
+    baseline = leg("TenantB", "owner", 200, TENANT_B)
+    legs = [leg("TenantA", "acct", 200, dict(TENANT_B))]
+    table = build_matrix_table(baseline, legs)
+    pair = cold_witness_pair(baseline, legs)
+
+    out = format_report_md(table, pair, "GET /account/123")
+
+    assert "# Authorization Trust-Boundary Report" in out
+    assert "GET /account/123" in out
+    assert "CANDIDATE" in out
+    assert "CONFIRMED" not in out                 # Hard-Gate im Report
+    assert "bob@example.com" not in out           # PII-Gate: cold-witness redacted
+    assert "email" in out                         # geleaktes PII-Feld als Pfad sichtbar
+    assert "Reproduction" in out                  # Repro-Schritte enthalten
+    assert "TenantA" in out and "TenantB" in out  # Angreifer-Leg + Kontrolle
+
+
+def test_markdown_report_marks_invalid_when_no_control():
+    """Ohne gültige Kontrolle (owner bekam eigenes Objekt nicht) = kein belastbarer Report."""
+    baseline = leg("TenantB", "owner", 404, {"error": "not found"})
+    legs = [leg("TenantA", "acct", 200, dict(TENANT_B))]
+    table = build_matrix_table(baseline, legs)
+    out = format_report_md(table, None, "GET /account/123")
+    assert "CANDIDATE" not in out
+    assert "no valid control" in out.lower() or "ungültig" in out.lower()

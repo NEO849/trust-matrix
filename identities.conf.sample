@@ -1,0 +1,18 @@
+# trust-matrix identity matrix — one identity per line, '|'-separated:
+#   label | kind | auth | cookie
+#
+# kind must be one of: owner, acct, anon, expired, revoked
+#   owner   = the control; fetches ITS OWN object (must return 200). Exactly one required.
+#   acct    = a second, separate account (the attacker identity).
+#   anon    = no credentials. If this leg also gets the data, it's public -> auto-downgrade.
+#   expired = a token whose lifetime has passed (tests expiry enforcement).
+#   revoked = a token you explicitly revoked / logged out server-side (tests session invalidation).
+#
+# You supply the sessions. trust-matrix never creates accounts (AUP) and only sends GET.
+# Leave the auth and cookie fields empty for anon. Either an auth header or a cookie works.
+
+TenantB          | owner   | Bearer <OWNER_TOKEN>    |
+TenantA          | acct    | Bearer <OTHER_TOKEN>    |
+anon             | anon    |                         |
+TenantB-expired  | expired | Bearer <EXPIRED_TOKEN>  |
+TenantB-revoked  | revoked | Bearer <REVOKED_TOKEN>  |
