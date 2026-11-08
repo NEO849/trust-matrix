@@ -19,7 +19,7 @@ not noisy "CONFIRMED!" claims. One GET operation, an identity matrix, an honest 
 &nbsp;
 ![License](https://img.shields.io/badge/License-MIT-2b3440?style=flat-square&labelColor=0b0f14)
 &nbsp;
-![Python](https://img.shields.io/badge/Python-3.8+-2b3440?style=flat-square&logo=python&logoColor=9aa39c&labelColor=0b0f14)
+![Python](https://img.shields.io/badge/Python-3.10+-2b3440?style=flat-square&logo=python&logoColor=9aa39c&labelColor=0b0f14)
 &nbsp;
 ![Safe by default](https://img.shields.io/badge/GET--only_·_dry--run-1f7a33?style=flat-square&labelColor=0b0f14)
 
@@ -120,7 +120,7 @@ cd trust-matrix
 pip install -r requirements.txt   # one dependency: requests
 ```
 
-Python 3.8+. No build step, no services.
+Python 3.10+. No build step, no services.
 
 ---
 
