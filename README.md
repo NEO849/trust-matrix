@@ -4,8 +4,6 @@
 
 <br/>
 
-# trust-matrix
-
 **Replay one request across many identities — see where the trust boundary breaks.**
 
 <em>A focused CLI for authorization (BOLA / IDOR) testing that produces <b>triage-safe evidence</b>,<br/>
@@ -15,7 +13,7 @@ not noisy "CONFIRMED!" claims. One GET operation, an identity matrix, an honest 
 
 [![CI](https://github.com/NEO849/trust-matrix/actions/workflows/ci.yml/badge.svg)](https://github.com/NEO849/trust-matrix/actions/workflows/ci.yml)
 &nbsp;
-![Tests](https://img.shields.io/badge/tests-20_passing-1f7a33?style=flat-square&labelColor=0b0f14)
+![Tests](https://img.shields.io/badge/tests-21_passing-1f7a33?style=flat-square&labelColor=0b0f14)
 &nbsp;
 ![License](https://img.shields.io/badge/License-MIT-2b3440?style=flat-square&labelColor=0b0f14)
 &nbsp;
@@ -25,13 +23,43 @@ not noisy "CONFIRMED!" claims. One GET operation, an identity matrix, an honest 
 
 <br/>
 
-<a href="#why">Why</a> · <a href="#what">What it does</a> · <a href="#different">Why it's different</a> · <a href="#notwhat">What it is NOT</a> · <a href="#install">Install</a> · <a href="#quickstart">Quickstart</a> · <a href="#verdicts">How it decides</a> · <a href="#safety">Safety</a>
+<a href="#demo">Quick demo</a> · <a href="#why">Why</a> · <a href="#what">What it does</a> · <a href="#different">Why it's different</a> · <a href="#notwhat">What it is NOT</a> · <a href="#install">Install</a> · <a href="#quickstart">Quickstart</a> · <a href="#verdicts">How it decides</a> · <a href="#safety">Safety</a>
 
 </div>
 
 > **Scope / lawful use.** Authorized testing only: your own systems, or in-scope bug-bounty / pentest
 > targets. You supply sessions for accounts you control; trust-matrix never creates accounts (AUP),
 > only sends GET, and defaults to dry-run. See [`SAFETY.md`](SAFETY.md).
+
+---
+
+<a id="demo"></a>
+![Quick demo](https://img.shields.io/badge/Quick_demo_·_zero_setup-1f7a33?style=for-the-badge&labelColor=0b0f14)
+
+See the whole idea in one command — **no real target, no credentials, nothing leaves your machine.**
+`demo.py` starts a local fixture API with a planted BOLA bug and runs trust-matrix against it:
+
+```bash
+git clone https://github.com/NEO849/trust-matrix && cd trust-matrix
+python3 demo.py
+```
+
+```text
+[demo] fixture API with a planted BOLA bug is live on http://127.0.0.1:42419
+[demo] running: trust_matrix.py --go --report md
+
+== Trust-Matrix :: GET /account/123 ==
+LABEL              KIND     STATUS SCHEMA  VALUES  PII-LEAK  VERDICT
+--------------------------------------------------------------------
+TenantA            acct     200    100%    100%    4         CANDIDATE
+anon               anon     403    0%      0%      0         blocked
+TenantB-expired    expired  200    100%    100%    4         CANDIDATE  <- expired token still honored — broken token expiry enforcement
+
+2 CANDIDATE — reproduce independently and verify server-side before reporting. No auto-submit.
+```
+
+You get the cross-identity matrix, an honest verdict, and a PII-redacted
+`trust_matrix_report.md` you can open — in about a minute, against a safe local fixture.
 
 ---
 
@@ -54,6 +82,31 @@ trust-matrix does the mechanical part once, carefully, and hands you evidence yo
 
 <a id="what"></a>
 ![What it does](https://img.shields.io/badge/What_it_does-141820?style=for-the-badge&labelColor=0b0f14)
+
+```mermaid
+flowchart LR
+    R["GET /account/123<br/>one operation"] --> F{{replay<br/>per identity}}
+    F --> O["owner"]
+    F --> A["acct"]
+    F --> N["anon"]
+    F --> E["expired"]
+    F --> V["revoked"]
+    O --> D[["diff every leg<br/>vs owner control"]]
+    A --> D
+    N --> D
+    E --> D
+    V --> D
+    D --> C["CANDIDATE<br/>got the owner's data"]
+    D --> B["blocked<br/>boundary held"]
+    D --> P["public-data-review<br/>anon also got it"]
+
+    classDef ctrl fill:#13231a,stroke:#2ea043,color:#d7ddd6;
+    classDef cand fill:#2a2113,stroke:#d8a44a,color:#e9e0cf;
+    classDef blok fill:#161c24,stroke:#4f6f5b,color:#cbd3cb;
+    class O ctrl;
+    class C cand;
+    class B,P blok;
+```
 
 Give it one operation and an identity matrix. It replays the request once per identity and diffs
 every leg against the **owner control**:
@@ -154,7 +207,10 @@ python3 trust_matrix.py --identities identities.conf \
 Outputs land in `trust_matrix_out/`: a PII-redacted `trust_matrix_findings.json` and, with
 `--report md`, a `trust_matrix_report.md` you can adapt into a disclosure.
 
-### Identity kinds
+<details>
+<summary><b>Identity kinds</b> — the five legs you can define</summary>
+
+<br/>
 
 | kind | meaning |
 |---|---|
@@ -163,6 +219,8 @@ Outputs land in `trust_matrix_out/`: a PII-redacted `trust_matrix_findings.json`
 | `anon` | no credentials — if this leg also gets the data, it is **public** → auto-downgrade |
 | `expired` | a token whose lifetime has passed (tests expiry enforcement) |
 | `revoked` | a token you revoked / logged out server-side (tests session invalidation) |
+
+</details>
 
 ---
 
@@ -193,10 +251,16 @@ auto-submit**. Full threat model and responsibilities in [`SAFETY.md`](SAFETY.md
 
 ![Layout](https://img.shields.io/badge/Project_layout-141820?style=for-the-badge&labelColor=0b0f14)
 
+<details>
+<summary><b>Files &amp; how to run the tests</b></summary>
+
+<br/>
+
 ```
 trust_matrix.py   CLI + replay + verdict logic + Markdown report
 diff_core.py      pure JSON diff primitives (schema / value overlap / PII) — offline-testable
-tests/            20 tests — unit (fixtures) + end-to-end against a local fixture server
+demo.py           zero-setup demo — local fixture API + a live run against it
+tests/            21 tests — unit (fixtures) + end-to-end against a local fixture server
 identities.conf.sample   the input format, documented
 SAFETY.md         guardrails as a threat model
 ```
@@ -205,8 +269,10 @@ Run the tests yourself:
 
 ```bash
 pip install -r requirements.txt pytest
-python -m pytest -q      # 20 passed
+python -m pytest -q      # 21 passed
 ```
+
+</details>
 
 ---
 

@@ -6,7 +6,7 @@ way are very welcome.
 ## Principles (please keep these)
 
 - **Test-first.** Every behavior change ships with a test. The suite must stay green
-  (`python -m pytest -q` → 20+ passed). A new feature starts with a failing test.
+  (`python -m pytest -q` → 21+ passed). A new feature starts with a failing test.
 - **The guardrails are not negotiable.** GET-only, dry-run by default, no account creation, PII
   never in clear text, verdict is `CANDIDATE` (never "CONFIRMED"), no auto-submit. A change that
   weakens any of these will not be merged.

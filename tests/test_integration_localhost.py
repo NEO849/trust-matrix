@@ -105,6 +105,17 @@ def test_live_run_flags_candidate_and_redacts(tmp_path):
     assert "bob@example.com" not in json.dumps(artifact)
 
 
+def test_demo_script_runs_and_flags_candidate():
+    """The zero-setup demo is the onboarding front door — it must stay runnable
+    end-to-end (fixture server + CLI wiring + PII redaction)."""
+    demo = os.path.join(ROOT, "demo.py")
+    r = subprocess.run([sys.executable, demo], capture_output=True, text=True, timeout=30)
+    assert r.returncode == 0, r.stderr
+    assert "CANDIDATE" in r.stdout
+    assert "CONFIRMED" not in r.stdout            # Hard-Gate holds through the demo
+    assert "bob@example.com" not in r.stdout       # PII stays redacted end-to-end
+
+
 def test_live_run_writes_submittable_markdown_report(tmp_path):
     REQUESTS_SEEN["n"] = 0
     srv = _serve()
