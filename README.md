@@ -1,6 +1,6 @@
 <div align="center">
 
-<img src="docs/readme/social-preview.png" alt="trust-matrix replays one GET across the identity matrix {owner, acct, anon, expired, revoked}: owner=200 is the control, and the same data reaching another identity is the trust-boundary break" width="100%">
+<img src="https://raw.githubusercontent.com/NEO849/trust-matrix/main/docs/readme/social-preview.png" alt="trust-matrix replays one GET across the identity matrix {owner, acct, anon, expired, revoked}: owner=200 is the control, and the same data reaching another identity is the trust-boundary break" width="100%">
 
 <br/>
 
@@ -8,6 +8,10 @@
 
 <em>A focused CLI for authorization (BOLA / IDOR) testing that produces <b>triage-safe evidence</b>,<br/>
 not noisy "CONFIRMED!" claims. One GET operation, an identity matrix, an honest verdict.</em>
+
+<br/>
+
+<sub>For bug-bounty hunters, pentesters and API-security engineers — on their own or in-scope systems.</sub>
 
 <br/>
 
@@ -44,6 +48,13 @@ git clone https://github.com/NEO849/trust-matrix && cd trust-matrix
 python3 demo.py
 ```
 
+<p align="center">
+  <img src="https://raw.githubusercontent.com/NEO849/trust-matrix/main/docs/readme/demo.gif" alt="trust-matrix running against a local fixture API: the cross-identity matrix flags acct and expired as CANDIDATE, anon stays blocked" width="90%">
+</p>
+
+<details>
+<summary>text output</summary>
+
 ```text
 [demo] fixture API with a planted BOLA bug is live on http://127.0.0.1:42419
 [demo] running: trust_matrix.py --go --report md
@@ -57,6 +68,8 @@ TenantB-expired    expired  200    100%    100%    4         CANDIDATE  <- expir
 
 2 CANDIDATE — reproduce independently and verify server-side before reporting. No auto-submit.
 ```
+
+</details>
 
 You get the cross-identity matrix, an honest verdict, and a PII-redacted
 `trust_matrix_report.md` you can open — in about a minute, against a safe local fixture.
