@@ -180,13 +180,29 @@ no comparable tool tests is a **genuinely revoked** server-issued token replayed
 <a id="install"></a>
 ![Install](https://img.shields.io/badge/Install-141820?style=for-the-badge&labelColor=0b0f14)
 
+**Install the CLI** (recommended — isolated, gives you a global `trust-matrix`):
+
+```bash
+pipx install git+https://github.com/NEO849/trust-matrix.git
+```
+
+**Or with plain pip:**
+
+```bash
+pip install git+https://github.com/NEO849/trust-matrix.git
+# ...or pin an exact release:
+pip install https://github.com/NEO849/trust-matrix/releases/download/v0.1.0/trust_matrix-0.1.0-py3-none-any.whl
+```
+
+**Or clone for development:**
+
 ```bash
 git clone https://github.com/NEO849/trust-matrix
 cd trust-matrix
 pip install -r requirements.txt   # one dependency: requests
 ```
 
-Python 3.10+. No build step, no services.
+Python 3.10+. No build step, no services. One runtime dependency: `requests`.
 
 ---
 
